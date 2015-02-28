@@ -1,0 +1,2 @@
+#!/bin/bash
+./libdialog.shl ./test_libdialog.sh
