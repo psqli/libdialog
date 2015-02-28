@@ -233,8 +233,10 @@ add_replys(){
 del_replys(){
   count=0
   while [ "$count" != "3" ]; do
-    rm $TMP/${REPLY[$count]}
-    count=$((count+1))
+    if [ ! -z "${REPLY[$count]}" ]; then
+      rm $TMP/${REPLY[$count]}
+      count=$((count+1))
+    fi
   done
 }
 
