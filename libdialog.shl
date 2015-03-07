@@ -7,14 +7,13 @@
 #>    define_interface  "shell/dialog/Xdialog"
 #>    get  "<text_to_show>"  "<initial_text>"  "<help_text>"
 #>    put  "<text_to_show>"  <icon_number>
-#>    yesno  "<text_to_show>"  "<help_text>"
+#>    yesno  "<text_to_show>"  "<default: yes=0/no=1>"  "<help_text>"
 #>    menu  "<text_to_show>"  "<menu_list>"
 #         *Model to make menu_list:
-#           cat << EOF >&1
-#               "<return_name>"  "<item_description>"
-#               "<return_name>"  "<item_description>"
-#           EOF
-#           menu "<text_to_show>" $?
+#           menu "<text_to_show>" "\
+#           This is the first option\n\
+#           This is the second option\n\
+#           This is the third option"
 # INFO <-
 
 ########################################
@@ -64,14 +63,14 @@ get(){
   case "$INTERFACE" in
   "shell")
     clear
-    echo -e "*`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`*"
-    echo -e "`cecho orange "$NAME_CURRENT_WINDOW"`"
-    echo -e "*`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`*"
+    echo -e "#`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`#"
+    echo -e "#`cecho orange "$NAME_CURRENT_WINDOW"`#"
+    echo -e "#`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`#"
     
     echo -e "\n\n"
     
-    echo -e "[ \e[32m$1\e[0m ]"
-    echo -en "\e[32m->\e[0m"
+    echo -e "$1"
+    cecho green "->"
     read retvar;;
   *)
     local text_help
@@ -94,8 +93,6 @@ get(){
             $CMDX;;
     esac;;
   esac
-  
-  echo "$retvar"
 }
 ######################
 #FUNCTION TO PUT TEXT#
@@ -104,15 +101,15 @@ put(){
   case "$INTERFACE" in
   "shell")
     clear
-    echo -e "*`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`*"
-    echo -e "`cecho orange "$NAME_CURRENT_WINDOW"`"
-    echo -e "*`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`*"
+    echo -e "#`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`#"
+    echo -e "#`cecho orange "$NAME_CURRENT_WINDOW"`#"
+    echo -e "#`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`#"
     
     echo -e "\n\n"
     
     echo -e "$1"
     echo -e "\n\n"
-    echo "[OK] -- press ENTER"
+    cecho green "\n[OK] -- press ENTER\n"
     read;;
   *)
     local ICON
@@ -140,7 +137,6 @@ put(){
             $CMDX;;
     esac;;
   esac
-  echo "$retvar";
 }
 ###########################
 #FUNCTION TO SELECT YES/NO#
@@ -148,27 +144,42 @@ put(){
 yesno(){
   case "$INTERFACE" in
     "shell")
-      clear
-      echo -e "*`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`*"
-      echo -e "`cecho orange "$NAME_CURRENT_WINDOW"`"
-      echo -e "*`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`*"
-      
-      echo -e "\n\n"
-      echo -e "$1"
-      echo -e "\n\n"
-      echo "[Yes] -- type 'y'/'Y'"
-      echo "[No] -- type 'n'/'N'"
       local answer
-      read $answer
-      case "$answer" in
-        "y"|"Y")
-          retvar=0;;
-        "n"|"N")
-          retvar=1;;
-      esac;;
+      local repeat
+      repeat="1"
+      while [ "$repeat" = "1" ]; do
+        clear
+        echo -e "#`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`#"
+        echo -e "#`cecho orange "$NAME_CURRENT_WINDOW"`#"
+        echo -e "#`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`#"
+        
+        echo
+        echo -e "$1"
+        echo
+        cecho green "\n[Yes] type '"; echo -n "y"; cecho green "' or '"; echo -n "Y"; cecho green "'"
+        cecho green "\n[ No] type '"; echo -n "n"; cecho green "' or '"; echo -n "N"; cecho green "'"
+        cecho green "\ndefault: [`if [ "$2" = "0" ]; then echo "Yes"; elif [ "$2" = "1" ]; then echo "No"; fi`]\n"
+        read answer
+        case "$answer" in
+          "y"|"Y")
+            retvar=0
+            repeat=0;;
+          "n"|"N")
+            retvar=1
+            repeat=0;;
+          *)
+            if [ $2 = 0 ]; then
+              repeat=0
+            elif [ $2 = 1 ]; then
+              repeat=0
+            else
+              repeat=1
+            fi;;
+        esac
+      done;;
     *)
         $DIALOG --title "$NAME_CURRENT_WINDOW" \
-        $CMDHELP "$2" \
+        $CMDHELP "$3" \
         --yesno "$1" 0 0
         status="$?"
         case $status in
@@ -180,8 +191,6 @@ yesno(){
                         $CMDX;;
         esac;;
   esac
-  
-  echo "$retvar";
 }
 #########################
 #FUNCTION TO MENU SELECT#
@@ -190,19 +199,22 @@ menu(){
   case "$INTERFACE" in
     "shell")
       clear
-      echo -e "*`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`*"
-      echo -e "`cecho orange "$NAME_CURRENT_WINDOW"`"
-      echo -e "*`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`*"
+      echo -e "#`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`#"
+      echo -e "#`cecho orange "$NAME_CURRENT_WINDOW"`#"
+      echo -e "#`echo -n "$NAME_CURRENT_WINDOW" | tr [:alnum:] \#`#"
       
       echo -e "\n\n"
       echo -e "$1"
       echo "- - - - - - - - - - - - - - - - - - - -"
-      nl -v0
-      ;;
+      cat $2 | nl -v0 -w1 -s" "
+      echo "- - - - - - - - - - - - - - - - - - - -"
+      read retvar[1]
+      retvar="`cat "$2" | nl -v0 -w1 -s" " | grep "^${retvar[1]}"`"
+      retvar="`echo "$retvar" | cut -d"${retvar[1]}" -f2 | cut -d"\"" -f2`";;
     *)
       $DIALOG --title "$NAME_CURRENT_WINDOW" \
       --menu "$1" 0 0 0 \
-      $2 \
+       \
       2>$TMP/$REPLY
       status="$?"
       case $status in
@@ -214,8 +226,6 @@ menu(){
           $CMDX;;
       esac;;
   esac
-  
-  echo "$retvar";
 }
 
 ##########
