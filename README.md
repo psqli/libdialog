@@ -1,5 +1,5 @@
 # libdialog
-The libdialog is a library that facilitates developers at the time of writing code create a interface for later interact with the user.
+libdialog is a library that helps developers when writing code that creates a interface for interaction with the user.
 
 # How use it:
 See the file "test_libdialog" then you see how "libdialog.shl" works.
